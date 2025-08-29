@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person Detection with Roboflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .upload-area.active {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+            display: inline-block;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.6);
+        }
+        
+        .btn:disabled {
+            background: linear-gradient(45deg, #666, #999);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-detect {
+            background: linear-gradient(45deg, #FF5722, #FF9800);
+            box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+        
+        .btn-detect:hover {
+            box-shadow: 0 6px 20px rgba(255, 87, 34, 0.6);
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .detection-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            min-height: 150px;
+        }
+        
+        .result-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            display: none;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .result-stats {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #2196F3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #21CBF3;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            margin: 15px 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .success {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Person Detection System</h1>
+            <p class="subtitle">Upload an image to detect people using Roboflow's advanced computer vision API</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="upload-section">
+                <h2 class="section-title">Upload Image</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drag & drop your image here or click to browse</p>
+                    <button class="btn" id="browseBtn">Select Image</button>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                
+                <img id="imagePreview" class="image-preview" alt="Image preview">
+                
+                <button class="btn btn-detect" id="detectBtn" disabled>Detect People</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing image with Roboflow API...</p>
+                </div>
+                
+                <div class="error" id="errorMessage"></div>
+                <div class="success" id="successMessage"></div>
+            </div>
+            
+            <div class="result-section">
+                <h2 class="section-title">Detection Results</h2>
+                <img id="resultImage" class="result-image" alt="Detection result">
+                
+                <div class="detection-result">
+                    <div id="resultContent">
+                        <p>Results will appear here after processing.</p>
+                        <div class="result-stats">
+                            <div class="stat-item">
+                                <span>Status:</span>
+                                <span>Waiting for image</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>People Detected:</span>
+                                <span>0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Processing Time:</span>
+                                <span>0ms</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to use this tool:</h3>
+            <ol>
+                <li>Click "Select Image" or drag and drop an image into the upload area</li>
+                <li>Preview your image to ensure it's the correct one</li>
+                <li>Click "Detect People" to send the image to Roboflow API</li>
+                <li>View the results including the number of people detected and confidence levels</li>
+                <li>For best results, use clear images with visible people (max 5MB)</li>
+            </ol>
+            <p><strong>Note:</strong> This demo uses a public Roboflow API key. For production use, consider using your own API key.</p>
+        </div>
+        
+        <footer>
+            <p>Powered by Roboflow Computer Vision API | People Detection Model v9</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const uploadArea = document.getElementById('uploadArea');
+            const browseBtn = document.getElementById('browseBtn');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const detectBtn = document.getElementById('detectBtn');
+            const resultImage = document.getElementById('resultImage');
+            const resultContent = document.getElementById('resultContent');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Variables
+            let selectedFile = null;
+            
+            // Event Listeners
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            detectBtn.addEventListener('click', processImage);
+            
+            // Drag and drop events
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('active');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect();
+                }
+            });
+            
+            // Handle file selection
+            function handleFileSelect() {
+                if (fileInput.files && fileInput.files[0]) {
+                    selectedFile = fileInput.files[0];
+                    
+                    // Validate file
+                    if (!selectedFile.type.match('image.*')) {
+                        showError('Please select a valid image file (JPEG, PNG, etc.)');
+                        return;
+                    }
+                    
+                    if (selectedFile.size > 5 * 1024 * 1024) {
+                        showError('File size exceeds 5MB limit. Please choose a smaller image.');
+                        return;
+                    }
+                    
+                    // Preview image
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        detectBtn.disabled = false;
+                        successMessage.style.display = 'none';
+                        errorMessage.style.display = 'none';
+                        
+                        // Clear previous results
+                        resultImage.style.display = 'none';
+                        resultContent.innerHTML = `
+                            <p>Image ready for processing. Click "Detect People" to analyze.</p>
+                            <div class="result-stats">
+                                <div class="stat-item">
+                                    <span>Status:</span>
+                                    <span>Ready for detection</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>People Detected:</span>
+                                    <span>0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Processing Time:</span>
+                                    <span>0ms</span>
+                                </div>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(selectedFile);
+                }
+            }
+            
+            // Process image with Roboflow API
+            function processImage() {
+                if (!selectedFile) {
+                    showError('Please select an image first.');
+                    return;
+                }
+                
+                // Show loading
+                loading.style.display = 'block';
+                detectBtn.disabled = true;
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                // Read file as base64
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result.split(',')[1];
+                    
+                    // Record start time for processing measurement
+                    const startTime = new Date().getTime();
+                    
+                    // Make API request to Roboflow
+                    axios({
+                        method: "POST",
+                        url: "https://serverless.roboflow.com/people-detection-o4rdr/9",
+                        params: {
+                            api_key: "c3lFn3qvf6wdySJyCAlx"
+                        },
+                        data: base64Image,
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        }
+                    })
+                    .then(function(response) {
+                        // Calculate processing time
+                        const endTime = new Date().getTime();
+                        const processingTime = endTime - startTime;
+                        
+                        // Display results
+                        displayResults(response.data, processingTime);
+                        loading.style.display = 'none';
+                        detectBtn.disabled = false;
+                        
+                        // Show result image (using original for demo)
+                        resultImage.src = imagePreview.src;
+                        resultImage.style.display = 'block';
+                        
+                        // Show success message
+                        successMessage.textContent = `Detection successful! Processed in ${processingTime}ms.`;
+                        successMessage.style.display = 'block';
+                    })
+                    .catch(function(error) {
+                        loading.style.display = 'none';
+                        detectBtn.disabled = false;
+                        console.error('API Error:', error);
+                        showError('Error processing image: ' + (error.response?.data?.error || error.message));
+                    });
+                };
+                reader.readAsDataURL(selectedFile);
+            }
+            
+            // Display results
+            function displayResults(data, processingTime) {
+                // Count people detected
+                const peopleDetected = data.predictions ? data.predictions.length : 0;
+                
+                // Create result HTML
+                let resultHTML = `
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <span>Status:</span>
+                            <span style="color: #4CAF50;">Success</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>People Detected:</span>
+                            <span style="font-weight: bold; color: ${peopleDetected > 0 ? '#4CAF50' : '#FF5722'}">${peopleDetected}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Processing Time:</span>
+                            <span>${processingTime}ms</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Add predictions details
+                if (peopleDetected > 0) {
+                    resultHTML += `<div style="margin-top: 20px;"><h3>Detection Details:</h3>`;
+                    
+                    data.predictions.forEach((pred, index) => {
+                        resultHTML += `
+                            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                                <div class="stat-item">
+                                    <span>Person ${index + 1}:</span>
+                                    <span>${(pred.confidence * 100).toFixed(1)}% confidence</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Position:</span>
+                                    <span>X: ${pred.x.toFixed(0)}, Y: ${pred.y.toFixed(0)}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Dimensions:</span>
+                                    <span>${pred.width.toFixed(0)}×${pred.height.toFixed(0)}px</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultHTML += `</div>`;
+                }
+                
+                resultContent.innerHTML = resultHTML;
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
