@@ -23,10 +23,11 @@ A modern web application to detect people in images using **HTML, CSS, JavaScrip
 <img width="1832" height="921" alt="image" src="https://github.com/user-attachments/assets/b8ea5a6c-48e2-46a0-b625-fc3cf0ace188" />
 
 
-🔗 Connect with me on LinkedIn
+## 🔗 Connect with me on LinkedIn
+[👉 Click here to Connect with me](www.linkedin.com/in/nixon-j)
 
 ## 🔗 Live Demo
-https://nixonj-dev.github.io/person-detection-system/
+[👉 Click here to try the Person Detection System](https://nixonj-dev.github.io/person-detection-system/)
 
 ## 📦 Installation
 ```bash
